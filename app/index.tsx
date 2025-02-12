@@ -1,16 +1,15 @@
-import { View, Text, StyleSheet } from "react-native";
-import React from "react";
-import { Image } from "expo-image";
+// index.tsx
+import { View, StyleSheet, Alert } from "react-native";
+import React, { useContext, useState } from "react";
 import ImageViewer from "@/components/ImageViewer";
 import Button from "@/components/Button";
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
+import { ImageContext } from "@/context/ImageContext";
 
 export default function Index() {
-    const [selectedImage, setSelectedImage] = useState<string | undefined>(
-        undefined
-    );
+    const { selectedImage, setSelectedImage } = useContext(ImageContext);
+    const router = useRouter();
 
     const pickImageAsync = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -21,28 +20,40 @@ export default function Index() {
 
         if (!result.canceled) {
             console.log(result);
-            setSelectedImage(result.assets[0].uri);
+            setSelectedImage(result.assets[0]);
         } else {
-            alert("You did not select any image.");
+            Alert.alert("No image selected", "You did not select any image.");
         }
+    };
+
+    const handleUsePhoto = () => {
+        // if (selectedImage) {
+        //     router.push({
+        //         pathname: "/processed-text",
+        //         params: { imageUri: selectedImage },
+        //     });
+        // } else {
+        //     Alert.alert("No image", "Please select an image first.");
+        // }
     };
 
     return (
         <View style={styles.container}>
             <View style={styles.imageContainer}>
-                <ImageViewer selectedImage={selectedImage} />
+                <ImageViewer imgSource={{}} selectedImage={selectedImage} />
             </View>
             <View style={styles.footerContainer}>
-                <Link href="/camera" asChild>
+                {/* <Link href="/camera">
                     <Button theme="primary" label="Take photo" icon="camera" />
-                </Link>
+                    Take a photo
+                </Link> */}
                 <Button
                     theme="primary"
                     label="Choose a photo"
                     onPress={pickImageAsync}
-                    icon={"picture-o"}
+                    icon="picture-o"
                 />
-                <Button label="Use this photo" />
+                <Button label="Use this photo" onPress={handleUsePhoto} />
             </View>
         </View>
     );
@@ -56,6 +67,7 @@ const styles = StyleSheet.create({
     },
     imageContainer: {
         flex: 1,
+        justifyContent: "center",
     },
     footerContainer: {
         flex: 1 / 3,
