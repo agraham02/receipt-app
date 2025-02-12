@@ -1,21 +1,33 @@
 // processed-text.tsx
 import { View, Text, StyleSheet, Image } from "react-native";
-import React from "react";
-import { useSearchParams } from "expo-router";
+import React, { useContext, useEffect } from "react";
+// import { useSearchParams } from "expo-router";
+import TextRecognition from "@react-native-ml-kit/text-recognition";
+import { ImageContext } from "@/context/ImageContext";
 
 export default function ProcessedText() {
-    const { imageUri } = useSearchParams<{ imageUri: string }>();
+    const { selectedImage } = useContext(ImageContext);
+
+    useEffect(() => {
+        const processImage = async () => {
+            console.log("Hello");
+            console.log(selectedImage?.uri);
+            if (!selectedImage?.uri) return;
+
+            try {
+                const text = await TextRecognition.recognize(selectedImage.uri);
+                console.log(text);
+            } catch (error) {
+                console.log(error);
+            }
+        };
+
+        processImage();
+    }, []);
 
     return (
         <View style={styles.container}>
             <Text style={styles.text}>Processed Text</Text>
-            {imageUri && (
-                <Image
-                    source={{ uri: imageUri }}
-                    style={styles.image}
-                    resizeMode="contain"
-                />
-            )}
         </View>
     );
 }

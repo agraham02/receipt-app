@@ -27,14 +27,13 @@ export default function Index() {
     };
 
     const handleUsePhoto = () => {
-        // if (selectedImage) {
-        //     router.push({
-        //         pathname: "/processed-text",
-        //         params: { imageUri: selectedImage },
-        //     });
-        // } else {
-        //     Alert.alert("No image", "Please select an image first.");
-        // }
+        if (selectedImage) {
+            router.push({
+                pathname: "/processed-text",
+            });
+        } else {
+            Alert.alert("No image", "Please select an image first.");
+        }
     };
 
     return (
