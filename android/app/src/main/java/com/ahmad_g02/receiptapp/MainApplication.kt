@@ -1,4 +1,4 @@
-package com.ahmad_g02.receiptapp
+package com.ahmad_g02.ReceiptApp
 
 import android.app.Application
 import android.content.res.Configuration

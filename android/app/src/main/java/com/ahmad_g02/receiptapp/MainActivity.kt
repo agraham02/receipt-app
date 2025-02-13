@@ -1,4 +1,4 @@
-package com.ahmad_g02.receiptapp
+package com.ahmad_g02.ReceiptApp
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

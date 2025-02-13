@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.ahmad_g02.receiptapp'
+    namespace 'com.ahmad_g02.ReceiptApp'
     defaultConfig {
-        applicationId 'com.ahmad_g02.receiptapp'
+        applicationId 'com.ahmad_g02.ReceiptApp'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
