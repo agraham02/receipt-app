@@ -15,8 +15,19 @@ export default function ProcessedText() {
             if (!selectedImage?.uri) return;
 
             try {
-                const text = await TextRecognition.recognize(selectedImage.uri);
-                console.log(text);
+                const result = await TextRecognition.recognize(selectedImage.uri);
+                console.log(result);
+                console.log(result.text);
+
+                for (let block of result.blocks) {
+                    console.log("Block text:", block.text);
+                    console.log("Block frame:", block.frame);
+
+                    for (let line of block.lines) {
+                        console.log("Line text:", line.text);
+                        console.log("Line frame:", line.frame);
+                    }
+                }
             } catch (error) {
                 console.log(error);
             }
