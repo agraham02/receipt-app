@@ -1,4 +1,5 @@
 // PeopleSelector.tsx
+import { useReceipt } from "@/context/ReceiptContext";
 import React, { useState } from "react";
 import {
     View,
@@ -15,13 +16,9 @@ export interface Person {
     name: string;
 }
 
-interface PeopleSelectorProps {
-    onPeopleChange?: (people: Person[]) => void;
-}
-
-const PeopleSelector: React.FC<PeopleSelectorProps> = ({ onPeopleChange }) => {
+const PeopleSelector: React.FC = () => {
     const [name, setName] = useState("");
-    const [people, setPeople] = useState<Person[]>([]);
+    const {people, setPeople} = useReceipt();
 
     const addPerson = () => {
         if (name.trim() === "") return;
@@ -32,13 +29,11 @@ const PeopleSelector: React.FC<PeopleSelectorProps> = ({ onPeopleChange }) => {
         const updatedPeople = [...people, newPerson];
         setPeople(updatedPeople);
         setName("");
-        if (onPeopleChange) onPeopleChange(updatedPeople);
     };
 
     const removePerson = (id: string) => {
         const updatedPeople = people.filter((person) => person.id !== id);
         setPeople(updatedPeople);
-        if (onPeopleChange) onPeopleChange(updatedPeople);
     };
 
     return (
