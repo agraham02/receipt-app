@@ -8,28 +8,14 @@ import {
     StyleSheet,
     Alert,
 } from "react-native";
-import { useSearchParams, useRouter } from "expo-router";
-
-export interface Person {
-    id: string;
-    name: string;
-}
-
-export interface ReceiptItem {
-    id: string;
-    name: string;
-    price: number;
-}
-
-export interface ItemAssignment {
-    [itemId: string]: string[];
-}
+import { useRouter } from "expo-router";
+import { Assignment, Person, ReceiptItem, useReceipt } from "@/context/ReceiptContext";
 
 // Helper function to calculate each person’s share
 const calculateSplits = (
     items: ReceiptItem[],
     people: Person[],
-    assignments: ItemAssignment
+    assignments: Assignment
 ) => {
     // Initialize the mapping: personID -> amount owed
     const splits: { [personId: string]: number } = {};
@@ -52,29 +38,15 @@ const calculateSplits = (
 };
 
 const SplitSummaryScreen: React.FC = () => {
-    // Retrieve route params
-    const {
-        items: itemsParam,
-        people: peopleParam,
-        assignments: assignmentsParam,
-    } = useSearchParams<{
-        items: string;
-        people: string;
-        assignments: string;
-    }>();
-
-    // Parse the parameters (or you could use context/state)
-    const items: ReceiptItem[] = JSON.parse(itemsParam || "[]");
-    const people: Person[] = JSON.parse(peopleParam || "[]");
-    const assignments: ItemAssignment = JSON.parse(assignmentsParam || "{}");
+    const router = useRouter();
+    // Get data from the shared ReceiptContext
+    const { people, items, assignments } = useReceipt();
 
     // Calculate the splits using useMemo for optimization
     const splits = useMemo(
         () => calculateSplits(items, people, assignments),
         [items, people, assignments]
     );
-
-    const router = useRouter();
 
     // Create a summary list from splits mapping
     const summaryData = people.map((person) => ({
@@ -85,7 +57,7 @@ const SplitSummaryScreen: React.FC = () => {
 
     const handleFinalize = () => {
         // For demonstration, just show an alert with the summary data.
-        let summaryText = summaryData
+        const summaryText = summaryData
             .map((person) => `${person.name}: $${person.amount.toFixed(2)}`)
             .join("\n");
         Alert.alert("Final Bill Summary", summaryText, [
