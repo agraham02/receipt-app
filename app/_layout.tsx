@@ -14,6 +14,18 @@ export default function RootLayout() {
                         name="processed-text"
                         options={{ title: "Processed Text" }}
                     />
+                    <Stack.Screen
+                        name="edit-items"
+                        options={{ title: "Edit Items" }}
+                    />
+                    <Stack.Screen
+                        name="edit-people"
+                        options={{ title: "Add/Remove People" }}
+                    />
+                    <Stack.Screen
+                        name="item-assignment"
+                        options={{ title: "Assign Items" }}
+                    />
                 </Stack>
             </ImageProvider>
         </ReceiptProvider>
