@@ -1,6 +1,35 @@
 // ReceiptContext.tsx
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
+const fakePeople: Person[] = [
+    { id: "1", name: "Alice" },
+    { id: "2", name: "Bob" },
+    { id: "3", name: "Charlie" },
+    { id: "4", name: "Derik" },
+    { id: "5", name: "Emma" },
+];
+
+const fakeItems: ReceiptItem[] = [
+    // Individual entrees ordered by different people
+    { id: "a", name: "Margherita Pizza", price: 13.99 },
+    { id: "b", name: "Spaghetti Carbonara", price: 15.99 },
+    { id: "c", name: "Fettuccine Alfredo", price: 16.5 },
+
+    // Shared appetizers
+    { id: "d", name: "Garlic Bread (Shared Appetizer)", price: 7.99 },
+    { id: "e", name: "Bruschetta (Shared Appetizer)", price: 9.99 },
+
+    // Drinks (individual or shared)
+    { id: "f", name: "Bottle of House Red Wine (Shared)", price: 34.99 },
+    { id: "g", name: "Sparkling Water", price: 4.5 },
+
+    // Shared dessert
+    { id: "h", name: "Tiramisu (Shared Dessert)", price: 8.99 },
+
+    // Additional drink option
+    { id: "i", name: "Espresso", price: 3.0 },
+];
+
 export interface Person {
     id: string;
     name: string;
@@ -29,8 +58,8 @@ interface ReceiptContextType {
 const ReceiptContext = createContext<ReceiptContextType | undefined>(undefined);
 
 export const ReceiptProvider = ({ children }: { children: ReactNode }) => {
-    const [people, setPeople] = useState<Person[]>([]);
-    const [items, setItems] = useState<ReceiptItem[]>([]);
+    const [people, setPeople] = useState<Person[]>(fakePeople);
+    const [items, setItems] = useState<ReceiptItem[]>(fakeItems);
     const [assignments, setAssignments] = useState<Assignment>({});
 
     const value = {
