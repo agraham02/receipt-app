@@ -7,36 +7,13 @@ import {
     FlatList,
     TouchableOpacity,
 } from "react-native";
-import { useRouter } from "expo-router";
-
-// Define your types (you may have these defined elsewhere)
-export interface Person {
-    id: string;
-    name: string;
-}
-
-export interface ReceiptItem {
-    id: string;
-    name: string;
-    price: number;
-}
+import { Link, useRouter } from "expo-router";
+import { ReceiptItem, useReceipt } from "@/context/ReceiptContext";
 
 // This type maps each receipt item to an array of person IDs who had that item.
 export interface ItemAssignment {
     [itemId: string]: string[];
 }
-
-const fakePeople: Person[] = [
-    { id: "1", name: "Alice" },
-    { id: "2", name: "Bob" },
-    { id: "3", name: "Charlie" },
-];
-
-const fakeItems: ReceiptItem[] = [
-    { id: "a", name: "Burger", price: 5.99 },
-    { id: "b", name: "Fries", price: 2.99 },
-    { id: "c", name: "Soda", price: 1.5 },
-];
 
 const ItemAssignmentScreen: React.FC = () => {
     // Assume the previous screen passed items and people via route parameters.
@@ -48,12 +25,7 @@ const ItemAssignmentScreen: React.FC = () => {
     // const items: ReceiptItem[] = JSON.parse(itemsParam || "[]");
     // const people: Person[] = JSON.parse(peopleParam || "[]");
 
-    const items = fakeItems;
-    const people = fakePeople;
-
-    const router = useRouter();
-    // assignments state: key is receipt item ID, value is an array of person IDs
-    const [assignments, setAssignments] = useState<ItemAssignment>({});
+    const {items, people, assignments, setAssignments} = useReceipt();
 
     // Initialize assignments with an empty array for each item on component mount.
     useEffect(() => {
@@ -139,6 +111,7 @@ const ItemAssignmentScreen: React.FC = () => {
             <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
                 <Text style={styles.nextButtonText}>Next</Text>
             </TouchableOpacity>
+            <Link href="/split-summary">next</Link>
         </View>
     );
 };
