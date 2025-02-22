@@ -28,13 +28,13 @@ const calculateSplits = (
     tipPercentage: number, // e.g., 0.15 for 15%
     tipIncluded: boolean // if gratuity is already included, no extra tip is applied
 ) => {
-    // Initialize the mapping: personID -> amount owed (only for the ordered items)
+    // Initialize mapping: personID -> amount owed (for ordered items only)
     const splits: { [personId: string]: number } = {};
     people.forEach((person) => {
         splits[person.id] = 0;
     });
 
-    // Sum of all item prices (only if assigned)
+    // Sum the prices of all items (only if assigned)
     let totalWithoutTip = 0;
     items.forEach((item) => {
         const assigned = assignments[item.id] || [];
@@ -47,12 +47,10 @@ const calculateSplits = (
         }
     });
 
-    // Initialize totalTip
+    // Calculate and distribute tip if gratuity is not already included
     let totalTip = 0;
-    // If gratuity is NOT already included, add extra tip proportionally
     if (!tipIncluded && tipPercentage > 0) {
         totalTip = totalWithoutTip * tipPercentage;
-        // Distribute the tip proportionally based on each person's subtotal
         const totalAssigned = Object.values(splits).reduce((a, b) => a + b, 0);
         people.forEach((person) => {
             const personShare = splits[person.id];
@@ -71,15 +69,13 @@ const SplitSummaryScreen: React.FC = () => {
     const router = useRouter();
     const { people, items, assignments } = useReceipt();
     const [modalVisible, setModalVisible] = useState(false);
-
-    // Local state for tipping options
     const [tipIncluded, setTipIncluded] = useState<boolean>(false);
-    const [tipPercentage, setTipPercentage] = useState<string>("0"); // stored as string for TextInput
+    const [tipPercentage, setTipPercentage] = useState<string>("0"); // as string for TextInput
 
-    // Convert tip percentage to decimal (e.g., 15 -> 0.15)
+    // Convert tip percentage (e.g., "15") to decimal (0.15)
     const tipPercentDecimal = parseFloat(tipPercentage) / 100 || 0;
 
-    // Calculate splits and totals using useMemo for optimization
+    // Calculate splits and totals using useMemo for efficiency
     const { splits, totalWithoutTip, totalTip } = useMemo(
         () =>
             calculateSplits(
@@ -92,20 +88,41 @@ const SplitSummaryScreen: React.FC = () => {
         [items, people, assignments, tipPercentDecimal, tipIncluded]
     );
 
-    // Prepare summary data for each person
-    const summaryData = people.map((person) => ({
-        id: person.id,
-        name: person.name,
-        amount: splits[person.id] || 0,
-    }));
+    // Prepare summary data per person, including a breakdown of their items
+    const summaryData = people.map((person) => {
+        // For each item, if the person is assigned, compute their share and extra info
+        const breakdown = items
+            .filter((item) => (assignments[item.id] || []).includes(person.id))
+            .map((item) => {
+                const assignedCount = (assignments[item.id] || []).length;
+                const sharePrice = item.price / assignedCount;
+                // List the names of all persons sharing this item (optional)
+                const sharedWith = people
+                    .filter((p) => (assignments[item.id] || []).includes(p.id))
+                    .map((p) => p.name);
+                return {
+                    id: item.id,
+                    name: item.name,
+                    fullPrice: item.price,
+                    sharePrice,
+                    assignedCount,
+                    sharedWith,
+                };
+            });
+        return {
+            id: person.id,
+            name: person.name,
+            amount: splits[person.id] || 0,
+            breakdown,
+        };
+    });
 
-    // Calculate overall total (should equal totalWithoutTip + totalTip)
+    // Overall total (should equal subtotal + tip)
     const overallTotal = summaryData.reduce(
         (sum, person) => sum + person.amount,
         0
     );
 
-    // Define your payment options
     const paymentOptions = [
         {
             id: "1",
@@ -133,22 +150,37 @@ const SplitSummaryScreen: React.FC = () => {
         },
     ];
 
+    // Finalize & Share using React Native's Share API
     const handleFinalize = async () => {
         const summaryText =
             summaryData
-                .map((person) => `${person.name}: $${person.amount.toFixed(2)}`)
-                .join("\n") +
-            `\n\nTip: $${totalTip.toFixed(2)}\nTotal: $${overallTotal.toFixed(
+                .map((person) => {
+                    const itemsText = person.breakdown
+                        .map(
+                            (item) =>
+                                `${item.name}: full $${item.fullPrice.toFixed(
+                                    2
+                                )}, your share $${item.sharePrice.toFixed(2)}`
+                        )
+                        .join("\n    ");
+                    return `${person.name}: $${person.amount.toFixed(
+                        2
+                    )}\n    ${itemsText}`;
+                })
+                .join("\n\n") +
+            `\n\nSubtotal: $${totalWithoutTip.toFixed(
+                2
+            )}\nTip: $${totalTip.toFixed(2)}\nTotal: $${overallTotal.toFixed(
                 2
             )}`;
 
         try {
             const result = await Share.share({
-                message: `Final Bill Summary:\n${summaryText}`,
+                message: `Final Bill Summary:\n\n${summaryText}`,
             });
             if (result.action === Share.sharedAction) {
-                // Optionally open the payment options modal after sharing
-                // setModalVisible(true);
+                // Optionally, open payment modal or navigate to confirmation
+                setModalVisible(true);
             } else if (result.action === Share.dismissedAction) {
                 console.log("Share dismissed");
             }
@@ -185,15 +217,41 @@ const SplitSummaryScreen: React.FC = () => {
                 </View>
             )}
 
+            {/* List of Persons with Breakdown */}
             <FlatList
                 data={summaryData}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <View style={styles.summaryRow}>
-                        <Text style={styles.personName}>{item.name}</Text>
-                        <Text style={styles.personAmount}>
-                            ${item.amount.toFixed(2)}
-                        </Text>
+                    <View style={styles.personContainer}>
+                        <View style={styles.summaryRow}>
+                            <Text style={styles.personName}>{item.name}</Text>
+                            <Text style={styles.personAmount}>
+                                ${item.amount.toFixed(2)}
+                            </Text>
+                        </View>
+                        {item.breakdown.length > 0 && (
+                            <View style={styles.breakdownContainer}>
+                                {item.breakdown.map((bd) => (
+                                    <View
+                                        key={bd.id}
+                                        style={styles.breakdownRow}
+                                    >
+                                        <Text style={styles.breakdownItem}>
+                                            {bd.name}
+                                        </Text>
+                                        <Text style={styles.breakdownDetail}>
+                                            Full: ${bd.fullPrice.toFixed(2)},
+                                            Your Share: $
+                                            {bd.sharePrice.toFixed(2)}
+                                            {bd.assignedCount > 1 &&
+                                                ` (Shared with: ${bd.sharedWith.join(
+                                                    ", "
+                                                )})`}
+                                        </Text>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
                     </View>
                 )}
                 ListFooterComponent={() => (
@@ -291,19 +349,38 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         textAlign: "center",
     },
-    summaryRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        paddingVertical: 12,
+    personContainer: {
+        marginBottom: 16,
+        paddingVertical: 8,
         borderBottomWidth: 1,
         borderBottomColor: "#eee",
     },
+    summaryRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+    },
     personName: {
         fontSize: 18,
+        fontWeight: "bold",
     },
     personAmount: {
         fontSize: 18,
         fontWeight: "bold",
+    },
+    breakdownContainer: {
+        marginTop: 8,
+        marginLeft: 16,
+    },
+    breakdownRow: {
+        marginBottom: 4,
+    },
+    breakdownItem: {
+        fontSize: 16,
+        fontWeight: "600",
+    },
+    breakdownDetail: {
+        fontSize: 14,
+        color: "#555",
     },
     footerContainer: {
         marginTop: 16,

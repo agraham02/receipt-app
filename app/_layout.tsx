@@ -26,6 +26,10 @@ export default function RootLayout() {
                         name="item-assignment"
                         options={{ title: "Assign Items" }}
                     />
+                    <Stack.Screen
+                        name="split-summary"
+                        options={{ title: "Summary" }}
+                    />
                 </Stack>
             </ImageProvider>
         </ReceiptProvider>
