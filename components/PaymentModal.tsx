@@ -17,7 +17,7 @@ interface PaymentModalProps {
 
 const PaymentModal: React.FC<PaymentModalProps> = ({ visible, onClose }) => {
     // Replace these with your actual payment details.
-    const qrCodeImage = require("./assets/qr-code.png"); // Replace with your QR code image path
+    const qrCodeImage = "require("; // Replace with your QR code image path
     const paymentHandle = "@YourPaymentHandle";
 
     return (

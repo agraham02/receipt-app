@@ -1,5 +1,5 @@
 // SplitSummaryScreen.tsx
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
     View,
     Text,
@@ -7,9 +7,16 @@ import {
     TouchableOpacity,
     StyleSheet,
     Alert,
+    Share,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Assignment, Person, ReceiptItem, useReceipt } from "@/context/ReceiptContext";
+import {
+    Assignment,
+    Person,
+    ReceiptItem,
+    useReceipt,
+} from "@/context/ReceiptContext";
+import PaymentModal from "@/components/PaymentModal";
 
 // Helper function to calculate each person’s share
 const calculateSplits = (
@@ -41,6 +48,7 @@ const SplitSummaryScreen: React.FC = () => {
     const router = useRouter();
     // Get data from the shared ReceiptContext
     const { people, items, assignments } = useReceipt();
+    const [modalVisible, setModalVisible] = useState(false);
 
     // Calculate the splits using useMemo for optimization
     const splits = useMemo(
@@ -55,14 +63,30 @@ const SplitSummaryScreen: React.FC = () => {
         amount: splits[person.id] || 0,
     }));
 
-    const handleFinalize = () => {
-        // For demonstration, just show an alert with the summary data.
+    // Finalize & Share using React Native's Share API
+    const handleFinalize = async () => {
         const summaryText = summaryData
             .map((person) => `${person.name}: $${person.amount.toFixed(2)}`)
             .join("\n");
-        Alert.alert("Final Bill Summary", summaryText, [
-            { text: "OK", onPress: () => router.push("/confirmation") },
-        ]);
+
+        try {
+            const result = await Share.share({
+                message: `Final Bill Summary:\n${summaryText}`,
+            });
+            if (result.action === Share.sharedAction) {
+                // Optionally navigate to a confirmation screen after sharing
+                // router.push("/confirmation");
+            } else if (result.action === Share.dismissedAction) {
+                // Dismissed the share dialog
+                console.log("Share dismissed");
+            }
+        } catch (error: any) {
+            Alert.alert("Error", error.message);
+        }
+    };
+
+    const showPaymentModal = () => {
+        setModalVisible(true);
     };
 
     return (
@@ -86,6 +110,18 @@ const SplitSummaryScreen: React.FC = () => {
             >
                 <Text style={styles.finalizeButtonText}>Finalize & Share</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+                style={styles.finalizeButton}
+                onPress={showPaymentModal}
+            >
+                <Text style={styles.finalizeButtonText}>
+                    Show Payment Options
+                </Text>
+            </TouchableOpacity>
+            <PaymentModal
+                visible={modalVisible}
+                onClose={() => setModalVisible(false)}
+            />
         </View>
     );
 };
