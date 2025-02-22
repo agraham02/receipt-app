@@ -1,3 +1,4 @@
+// SplitSummaryScreen.tsx
 import React, { useState, useMemo } from "react";
 import {
     View,
@@ -65,7 +66,6 @@ const calculateSplits = (
     return splits;
 };
 
-
 const SplitSummaryScreen: React.FC = () => {
     const router = useRouter();
     const { people, items, assignments } = useReceipt();
@@ -75,10 +75,10 @@ const SplitSummaryScreen: React.FC = () => {
     const [tipIncluded, setTipIncluded] = useState<boolean>(false);
     const [tipPercentage, setTipPercentage] = useState<string>("0"); // stored as string for TextInput
 
-    // Parse tip percentage as a decimal (e.g., 15 becomes 0.15)
+    // Convert tip percentage to decimal (15 -> 0.15)
     const tipPercentDecimal = parseFloat(tipPercentage) / 100 || 0;
 
-    // Calculate the splits with tipping options
+    // Calculate splits using useMemo for optimization
     const splits = useMemo(
         () =>
             calculateSplits(
@@ -96,6 +96,12 @@ const SplitSummaryScreen: React.FC = () => {
         name: person.name,
         amount: splits[person.id] || 0,
     }));
+
+    // Calculate total bill amount
+    const totalAmount = summaryData.reduce(
+        (sum, person) => sum + person.amount,
+        0
+    );
 
     // Define your payment options
     const paymentOptions = [
@@ -125,21 +131,20 @@ const SplitSummaryScreen: React.FC = () => {
         },
     ];
 
-    // Finalize & Share using React Native's Share API
     const handleFinalize = async () => {
-        const summaryText = summaryData
-            .map((person) => `${person.name}: $${person.amount.toFixed(2)}`)
-            .join("\n");
+        const summaryText =
+            summaryData
+                .map((person) => `${person.name}: $${person.amount.toFixed(2)}`)
+                .join("\n") + `\nTotal: $${totalAmount.toFixed(2)}`;
 
         try {
             const result = await Share.share({
                 message: `Final Bill Summary:\n${summaryText}`,
             });
             if (result.action === Share.sharedAction) {
-                // Optionally navigate to a confirmation screen after sharing
-                // router.push("/confirmation");
+                // Optionally open the payment options modal after sharing
+                // setModalVisible(true);
             } else if (result.action === Share.dismissedAction) {
-                // Dismissed the share dialog
                 console.log("Share dismissed");
             }
         } catch (error: any) {
@@ -155,7 +160,7 @@ const SplitSummaryScreen: React.FC = () => {
         <View style={styles.container}>
             <Text style={styles.header}>Final Bill Summary</Text>
 
-            {/* Tipping options */}
+            {/* Tipping Options */}
             <View style={styles.tipContainer}>
                 <Text style={styles.tipLabel}>
                     Is gratuity already included?
@@ -183,6 +188,14 @@ const SplitSummaryScreen: React.FC = () => {
                         <Text style={styles.personName}>{item.name}</Text>
                         <Text style={styles.personAmount}>
                             ${item.amount.toFixed(2)}
+                        </Text>
+                    </View>
+                )}
+                ListFooterComponent={() => (
+                    <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>Total</Text>
+                        <Text style={styles.totalAmount}>
+                            ${totalAmount.toFixed(2)}
                         </Text>
                     </View>
                 )}
@@ -261,6 +274,22 @@ const styles = StyleSheet.create({
     },
     personAmount: {
         fontSize: 18,
+        fontWeight: "bold",
+    },
+    totalRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        paddingVertical: 16,
+        borderTopWidth: 2,
+        borderTopColor: "#ccc",
+        marginTop: 8,
+    },
+    totalLabel: {
+        fontSize: 20,
+        fontWeight: "bold",
+    },
+    totalAmount: {
+        fontSize: 20,
         fontWeight: "bold",
     },
     finalizeButton: {
