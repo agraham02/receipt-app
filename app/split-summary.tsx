@@ -1,5 +1,4 @@
-// SplitSummaryScreen.tsx
-import React, { useMemo, useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
     View,
     Text,
@@ -8,6 +7,8 @@ import {
     StyleSheet,
     Alert,
     Share,
+    Switch,
+    TextInput,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -18,22 +19,25 @@ import {
 } from "@/context/ReceiptContext";
 import PaymentModal from "@/components/PaymentModal";
 
-// Helper function to calculate each person’s share
 const calculateSplits = (
     items: ReceiptItem[],
     people: Person[],
-    assignments: Assignment
+    assignments: Assignment,
+    tipPercentage: number, // e.g., 0.15 for 15%
+    tipIncluded: boolean // if gratuity is already included, no extra tip is applied
 ) => {
-    // Initialize the mapping: personID -> amount owed
+    // Initialize the mapping: personID -> amount owed (only for the ordered items)
     const splits: { [personId: string]: number } = {};
     people.forEach((person) => {
         splits[person.id] = 0;
     });
 
     // For each item, split the price among assigned persons
+    let totalWithoutTip = 0;
     items.forEach((item) => {
         const assigned = assignments[item.id] || [];
         if (assigned.length > 0) {
+            totalWithoutTip += item.price;
             const share = item.price / assigned.length;
             assigned.forEach((personId) => {
                 splits[personId] += share;
@@ -41,22 +45,52 @@ const calculateSplits = (
         }
     });
 
+    // If gratuity is NOT already included, add extra tip proportionally
+    if (!tipIncluded && tipPercentage > 0) {
+        const totalTip = totalWithoutTip * tipPercentage;
+        // Distribute the tip proportionally based on each person's subtotal
+        const totalAssigned = Object.values(splits).reduce((a, b) => a + b, 0);
+        people.forEach((person) => {
+            const personShare = splits[person.id];
+            // If someone didn't order anything, skip them.
+            if (personShare > 0 && totalAssigned > 0) {
+                // The tip contribution is proportional to the person's share of the total.
+                const tipContribution =
+                    (personShare / totalAssigned) * totalTip;
+                splits[person.id] += tipContribution;
+            }
+        });
+    }
+
     return splits;
 };
 
+
 const SplitSummaryScreen: React.FC = () => {
     const router = useRouter();
-    // Get data from the shared ReceiptContext
     const { people, items, assignments } = useReceipt();
     const [modalVisible, setModalVisible] = useState(false);
 
-    // Calculate the splits using useMemo for optimization
+    // Local state for tipping options
+    const [tipIncluded, setTipIncluded] = useState<boolean>(false);
+    const [tipPercentage, setTipPercentage] = useState<string>("0"); // stored as string for TextInput
+
+    // Parse tip percentage as a decimal (e.g., 15 becomes 0.15)
+    const tipPercentDecimal = parseFloat(tipPercentage) / 100 || 0;
+
+    // Calculate the splits with tipping options
     const splits = useMemo(
-        () => calculateSplits(items, people, assignments),
-        [items, people, assignments]
+        () =>
+            calculateSplits(
+                items,
+                people,
+                assignments,
+                tipPercentDecimal,
+                tipIncluded
+            ),
+        [items, people, assignments, tipPercentDecimal, tipIncluded]
     );
 
-    // Create a summary list from splits mapping
     const summaryData = people.map((person) => ({
         id: person.id,
         name: person.name,
@@ -120,6 +154,27 @@ const SplitSummaryScreen: React.FC = () => {
     return (
         <View style={styles.container}>
             <Text style={styles.header}>Final Bill Summary</Text>
+
+            {/* Tipping options */}
+            <View style={styles.tipContainer}>
+                <Text style={styles.tipLabel}>
+                    Is gratuity already included?
+                </Text>
+                <Switch value={tipIncluded} onValueChange={setTipIncluded} />
+            </View>
+            {!tipIncluded && (
+                <View style={styles.tipInputContainer}>
+                    <Text style={styles.tipLabel}>Add Tip (%):</Text>
+                    <TextInput
+                        style={styles.tipInput}
+                        keyboardType="numeric"
+                        value={tipPercentage}
+                        onChangeText={setTipPercentage}
+                        placeholder="e.g., 15"
+                    />
+                </View>
+            )}
+
             <FlatList
                 data={summaryData}
                 keyExtractor={(item) => item.id}
@@ -167,6 +222,31 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: "bold",
         marginBottom: 16,
+        textAlign: "center",
+    },
+    tipContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 8,
+        justifyContent: "space-between",
+        paddingHorizontal: 8,
+    },
+    tipLabel: {
+        fontSize: 16,
+    },
+    tipInputContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 16,
+        justifyContent: "space-between",
+        paddingHorizontal: 8,
+    },
+    tipInput: {
+        width: 60,
+        borderWidth: 1,
+        borderColor: "#ccc",
+        padding: 8,
+        borderRadius: 4,
         textAlign: "center",
     },
     summaryRow: {
