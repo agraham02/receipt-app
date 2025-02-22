@@ -20,6 +20,7 @@ import {
 } from "@/context/ReceiptContext";
 import PaymentModal from "@/components/PaymentModal";
 
+// Updated helper function that returns splits along with totals
 const calculateSplits = (
     items: ReceiptItem[],
     people: Person[],
@@ -33,7 +34,7 @@ const calculateSplits = (
         splits[person.id] = 0;
     });
 
-    // For each item, split the price among assigned persons
+    // Sum of all item prices (only if assigned)
     let totalWithoutTip = 0;
     items.forEach((item) => {
         const assigned = assignments[item.id] || [];
@@ -46,16 +47,16 @@ const calculateSplits = (
         }
     });
 
+    // Initialize totalTip
+    let totalTip = 0;
     // If gratuity is NOT already included, add extra tip proportionally
     if (!tipIncluded && tipPercentage > 0) {
-        const totalTip = totalWithoutTip * tipPercentage;
+        totalTip = totalWithoutTip * tipPercentage;
         // Distribute the tip proportionally based on each person's subtotal
         const totalAssigned = Object.values(splits).reduce((a, b) => a + b, 0);
         people.forEach((person) => {
             const personShare = splits[person.id];
-            // If someone didn't order anything, skip them.
             if (personShare > 0 && totalAssigned > 0) {
-                // The tip contribution is proportional to the person's share of the total.
                 const tipContribution =
                     (personShare / totalAssigned) * totalTip;
                 splits[person.id] += tipContribution;
@@ -63,7 +64,7 @@ const calculateSplits = (
         });
     }
 
-    return splits;
+    return { splits, totalWithoutTip, totalTip };
 };
 
 const SplitSummaryScreen: React.FC = () => {
@@ -75,11 +76,11 @@ const SplitSummaryScreen: React.FC = () => {
     const [tipIncluded, setTipIncluded] = useState<boolean>(false);
     const [tipPercentage, setTipPercentage] = useState<string>("0"); // stored as string for TextInput
 
-    // Convert tip percentage to decimal (15 -> 0.15)
+    // Convert tip percentage to decimal (e.g., 15 -> 0.15)
     const tipPercentDecimal = parseFloat(tipPercentage) / 100 || 0;
 
-    // Calculate splits using useMemo for optimization
-    const splits = useMemo(
+    // Calculate splits and totals using useMemo for optimization
+    const { splits, totalWithoutTip, totalTip } = useMemo(
         () =>
             calculateSplits(
                 items,
@@ -91,14 +92,15 @@ const SplitSummaryScreen: React.FC = () => {
         [items, people, assignments, tipPercentDecimal, tipIncluded]
     );
 
+    // Prepare summary data for each person
     const summaryData = people.map((person) => ({
         id: person.id,
         name: person.name,
         amount: splits[person.id] || 0,
     }));
 
-    // Calculate total bill amount
-    const totalAmount = summaryData.reduce(
+    // Calculate overall total (should equal totalWithoutTip + totalTip)
+    const overallTotal = summaryData.reduce(
         (sum, person) => sum + person.amount,
         0
     );
@@ -135,7 +137,10 @@ const SplitSummaryScreen: React.FC = () => {
         const summaryText =
             summaryData
                 .map((person) => `${person.name}: $${person.amount.toFixed(2)}`)
-                .join("\n") + `\nTotal: $${totalAmount.toFixed(2)}`;
+                .join("\n") +
+            `\n\nTip: $${totalTip.toFixed(2)}\nTotal: $${overallTotal.toFixed(
+                2
+            )}`;
 
         try {
             const result = await Share.share({
@@ -192,14 +197,38 @@ const SplitSummaryScreen: React.FC = () => {
                     </View>
                 )}
                 ListFooterComponent={() => (
-                    <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Total</Text>
-                        <Text style={styles.totalAmount}>
-                            ${totalAmount.toFixed(2)}
-                        </Text>
+                    <View style={styles.footerContainer}>
+                        <View style={styles.totalRow}>
+                            <Text style={styles.totalLabel}>Subtotal</Text>
+                            <Text style={styles.totalAmount}>
+                                ${totalWithoutTip.toFixed(2)}
+                            </Text>
+                        </View>
+                        <View style={styles.totalRow}>
+                            <Text style={styles.totalLabel}>Tip</Text>
+                            <Text style={styles.totalAmount}>
+                                ${totalTip.toFixed(2)}
+                            </Text>
+                        </View>
+                        <View
+                            style={[
+                                styles.totalRow,
+                                {
+                                    borderTopWidth: 2,
+                                    borderTopColor: "#ccc",
+                                    marginTop: 8,
+                                },
+                            ]}
+                        >
+                            <Text style={styles.totalLabel}>Total</Text>
+                            <Text style={styles.totalAmount}>
+                                ${overallTotal.toFixed(2)}
+                            </Text>
+                        </View>
                     </View>
                 )}
             />
+
             <TouchableOpacity
                 style={styles.finalizeButton}
                 onPress={handleFinalize}
@@ -276,13 +305,13 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "bold",
     },
+    footerContainer: {
+        marginTop: 16,
+    },
     totalRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        paddingVertical: 16,
-        borderTopWidth: 2,
-        borderTopColor: "#ccc",
-        marginTop: 8,
+        paddingVertical: 8,
     },
     totalLabel: {
         fontSize: 20,
