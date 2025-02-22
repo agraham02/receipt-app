@@ -63,6 +63,34 @@ const SplitSummaryScreen: React.FC = () => {
         amount: splits[person.id] || 0,
     }));
 
+    // Define your payment options
+    const paymentOptions = [
+        {
+            id: "1",
+            label: "Venmo QR Code",
+            type: "qr",
+            // image: require("@/assets/venmo_qr.png"), // Replace with your actual QR code image
+        },
+        {
+            id: "2",
+            label: "PayPal",
+            type: "handle",
+            value: "paypal.me/yourhandle",
+        },
+        {
+            id: "3",
+            label: "Cash App",
+            type: "handle",
+            value: "$YourCashApp",
+        },
+        {
+            id: "4",
+            label: "Link",
+            type: "link",
+            value: "https://yourpaymentlink.com",
+        },
+    ];
+
     // Finalize & Share using React Native's Share API
     const handleFinalize = async () => {
         const summaryText = summaryData
@@ -121,6 +149,7 @@ const SplitSummaryScreen: React.FC = () => {
             <PaymentModal
                 visible={modalVisible}
                 onClose={() => setModalVisible(false)}
+                paymentOptions={paymentOptions}
             />
         </View>
     );

@@ -7,36 +7,51 @@ import {
     TouchableOpacity,
     StyleSheet,
     Image,
+    FlatList,
 } from "react-native";
+import { PaymentOption } from "./types"; // Adjust the path if needed
 
 interface PaymentModalProps {
     visible: boolean;
     onClose: () => void;
-    // You can pass additional props for payment options if needed.
+    paymentOptions: PaymentOption[];
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ visible, onClose }) => {
-    // Replace these with your actual payment details.
-    const qrCodeImage = "require("; // Replace with your QR code image path
-    const paymentHandle = "@YourPaymentHandle";
+const PaymentModal: React.FC<PaymentModalProps> = ({
+    visible,
+    onClose,
+    paymentOptions,
+}) => {
+    const renderPaymentOption = ({ item }: { item: PaymentOption }) => {
+        return (
+            <View style={styles.optionContainer}>
+                <Text style={styles.optionLabel}>{item.label}</Text>
+                {item.type === "qr" && item.image ? (
+                    <Image
+                        source={item.image}
+                        style={styles.qrImage}
+                        resizeMode="contain"
+                    />
+                ) : item.type === "handle" && item.value ? (
+                    <Text style={styles.handleText}>{item.value}</Text>
+                ) : item.type === "link" && item.value ? (
+                    <Text style={styles.linkText}>{item.value}</Text>
+                ) : null}
+            </View>
+        );
+    };
 
     return (
         <Modal animationType="slide" transparent visible={visible}>
             <View style={styles.overlay}>
                 <View style={styles.modalContainer}>
                     <Text style={styles.title}>Payment Options</Text>
-                    <View style={styles.paymentOption}>
-                        <Text style={styles.optionLabel}>Scan to Pay:</Text>
-                        <Image
-                            source={qrCodeImage}
-                            style={styles.qrCode}
-                            resizeMode="contain"
-                        />
-                    </View>
-                    <View style={styles.paymentOption}>
-                        <Text style={styles.optionLabel}>Pay via Handle:</Text>
-                        <Text style={styles.handleText}>{paymentHandle}</Text>
-                    </View>
+                    <FlatList
+                        data={paymentOptions}
+                        keyExtractor={(item) => item.id}
+                        renderItem={renderPaymentOption}
+                        contentContainerStyle={styles.optionsList}
+                    />
                     <TouchableOpacity
                         style={styles.closeButton}
                         onPress={onClose}
@@ -64,22 +79,29 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         padding: 20,
         alignItems: "center",
+        maxHeight: "80%",
     },
     title: {
         fontSize: 20,
         fontWeight: "bold",
         marginBottom: 16,
     },
-    paymentOption: {
+    optionsList: {
         width: "100%",
+    },
+    optionContainer: {
         alignItems: "center",
         marginBottom: 20,
+        padding: 10,
+        borderWidth: 1,
+        borderColor: "#eee",
+        borderRadius: 8,
     },
     optionLabel: {
         fontSize: 16,
         marginBottom: 8,
     },
-    qrCode: {
+    qrImage: {
         width: 150,
         height: 150,
     },
@@ -88,11 +110,17 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         color: "#007bff",
     },
+    linkText: {
+        fontSize: 16,
+        color: "#007bff",
+        textDecorationLine: "underline",
+    },
     closeButton: {
         backgroundColor: "#28a745",
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,
+        marginTop: 10,
     },
     closeButtonText: {
         color: "#fff",
