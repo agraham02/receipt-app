@@ -28,16 +28,30 @@ const ItemEditor: React.FC = () => {
     const [tip, setTip] = useState<string>("0");
     const [tax, setTax] = useState<string>("0");
 
-    // Update the subtotal field whenever the computed subtotal changes.
+    // New state for tip mode: "percentage" or "fixed"
+    const [tipMode, setTipMode] = useState<"percentage" | "fixed">(
+        "percentage"
+    );
+
+    // Update the subtotal field whenever computedSubtotal changes.
     useEffect(() => {
         setSubtotal(computedSubtotal.toFixed(2));
     }, [computedSubtotal]);
 
+    // Compute the tip based on mode
+    const computedTip = useMemo(() => {
+        const sub = parseFloat(subtotal) || 0;
+        const tipInput = parseFloat(tip) || 0;
+        if (tipMode === "percentage") {
+            return sub * (tipInput / 100);
+        } else {
+            return tipInput;
+        }
+    }, [subtotal, tip, tipMode]);
+
     // Compute total dynamically; fallback to 0 if invalid.
-    const total =
-        (parseFloat(subtotal) || 0) +
-        (parseFloat(tip) || 0) +
-        (parseFloat(tax) || 0);
+    const computedTax = parseFloat(tax) || 0;
+    const total = (parseFloat(subtotal) || 0) + computedTip + computedTax;
 
     const addItem = () => {
         if (!name.trim() || !price.trim() || isNaN(Number(price))) return;
@@ -91,12 +105,55 @@ const ItemEditor: React.FC = () => {
             <View style={styles.summaryContainer}>
                 <View style={styles.fieldRow}>
                     <Text style={styles.fieldLabel}>Subtotal:</Text>
+                    <Text style={styles.fieldLabel}>Total:</Text>
+                    <Text style={styles.totalText}>${total.toFixed(2)}</Text>
                     <TextInput
                         style={styles.fieldInput}
                         value={subtotal}
                         onChangeText={setSubtotal}
                         keyboardType="numeric"
                     />
+                </View>
+                <View style={styles.tipModeContainer}>
+                    <Text style={styles.fieldLabel}>Tip Mode:</Text>
+                    <View style={styles.tipModeButtons}>
+                        <TouchableOpacity
+                            style={[
+                                styles.tipModeButton,
+                                tipMode === "percentage" &&
+                                    styles.tipModeButtonSelected,
+                            ]}
+                            onPress={() => setTipMode("percentage")}
+                        >
+                            <Text
+                                style={[
+                                    styles.tipModeText,
+                                    tipMode === "percentage" &&
+                                        styles.tipModeTextSelected,
+                                ]}
+                            >
+                                Percentage
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[
+                                styles.tipModeButton,
+                                tipMode === "fixed" &&
+                                    styles.tipModeButtonSelected,
+                            ]}
+                            onPress={() => setTipMode("fixed")}
+                        >
+                            <Text
+                                style={[
+                                    styles.tipModeText,
+                                    tipMode === "fixed" &&
+                                        styles.tipModeTextSelected,
+                                ]}
+                            >
+                                Fixed
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
                 <View style={styles.fieldRow}>
                     <Text style={styles.fieldLabel}>Tip:</Text>
@@ -105,7 +162,7 @@ const ItemEditor: React.FC = () => {
                         value={tip}
                         onChangeText={setTip}
                         keyboardType="numeric"
-                        placeholder="0"
+                        placeholder={tipMode === "percentage" ? "%" : "$"}
                     />
                 </View>
                 <View style={styles.fieldRow}>
@@ -122,10 +179,13 @@ const ItemEditor: React.FC = () => {
                     <Text style={styles.fieldLabel}>Total:</Text>
                     <Text style={styles.totalText}>${total.toFixed(2)}</Text>
                 </View>
+                <View style={styles.fieldRow}>
+                    <Text style={styles.fieldLabel}>Computed Tip:</Text>
+                    <Text style={styles.totalText}>
+                        ${computedTip.toFixed(2)}
+                    </Text>
+                </View>
             </View>
-            <TouchableOpacity style={styles.saveButton}>
-                <Text style={styles.saveButtonText}>Save & Continue</Text>
-            </TouchableOpacity>
         </View>
     );
 };
@@ -172,27 +232,29 @@ const styles = StyleSheet.create({
     summaryContainer: {
         padding: 16,
         backgroundColor: "#f9f9f9",
-        borderTopWidth: 1,
-        borderTopColor: "#ccc",
+        // borderTopWidth: 1,
+        // borderTopColor: "#ccc",
+        borderRadius: 10,
     },
     fieldRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 12,
+        marginBottom: 8,
     },
     fieldLabel: {
-        fontSize: 18,
+        // fontSize: 18,
         fontWeight: "bold",
     },
     fieldInput: {
         width: 80,
         borderWidth: 1,
         borderColor: "#ccc",
-        padding: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
         borderRadius: 4,
         textAlign: "right",
-        fontSize: 18,
+        // fontSize: 18,
     },
     totalRow: {
         borderTopWidth: 2,
@@ -201,7 +263,35 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     totalText: {
-        fontSize: 18,
+        // fontSize: 18,
+        fontWeight: "bold",
+    },
+    tipModeContainer: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 12,
+    },
+    tipModeButtons: {
+        flexDirection: "row",
+    },
+    tipModeButton: {
+        paddingVertical: 4,
+        paddingHorizontal: 12,
+        borderWidth: 1,
+        borderColor: "#28a745",
+        borderRadius: 4,
+        marginLeft: 8,
+    },
+    tipModeButtonSelected: {
+        backgroundColor: "#28a745",
+    },
+    tipModeText: {
+        // fontSize: 16,
+        color: "#28a745",
+    },
+    tipModeTextSelected: {
+        color: "#fff",
         fontWeight: "bold",
     },
     saveButton: {
