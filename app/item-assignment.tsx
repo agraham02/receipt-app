@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Link, useRouter } from "expo-router";
 import { ReceiptItem, useReceipt } from "@/context/ReceiptContext";
+import Button from "@/components/Button";
 
 // This type maps each receipt item to an array of person IDs who had that item.
 export interface ItemAssignment {
@@ -108,10 +109,7 @@ const ItemAssignmentScreen: React.FC = () => {
                 keyExtractor={(item) => item.id}
                 renderItem={renderItem}
             />
-            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-                <Text style={styles.nextButtonText}>Next</Text>
-            </TouchableOpacity>
-            <Link href="/split-summary">next</Link>
+            <Button label="Next" href="/split-summary" />
         </View>
     );
 };
