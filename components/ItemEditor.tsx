@@ -1,6 +1,6 @@
 // ItemsScreen.tsx
 import { useReceipt, ReceiptItem } from "@/context/ReceiptContext";
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
     View,
     Text,
@@ -16,20 +16,28 @@ const ItemEditor: React.FC = () => {
     const [name, setName] = useState("");
     const [price, setPrice] = useState("");
 
-    // Compute default subtotal as the sum of item prices
-    const defaultSubtotal = items.reduce((sum, item) => sum + item.price, 0);
+    // Compute the subtotal from items whenever they change
+    const computedSubtotal = useMemo(() => {
+        return items.reduce((sum, item) => sum + item.price, 0);
+    }, [items]);
 
     // Editable fields (stored as strings for TextInput)
     const [subtotal, setSubtotal] = useState<string>(
-        defaultSubtotal.toFixed(2)
+        computedSubtotal.toFixed(2)
     );
     const [tip, setTip] = useState<string>("0");
     const [tax, setTax] = useState<string>("0");
 
-    // Compute total dynamically; if fields are empty or invalid, fallback to 0.
+    // Update the subtotal field whenever the computed subtotal changes.
+    useEffect(() => {
+        setSubtotal(computedSubtotal.toFixed(2));
+    }, [computedSubtotal]);
+
+    // Compute total dynamically; fallback to 0 if invalid.
     const total =
-        parseFloat(subtotal) ||
-        0 + (parseFloat(tip) || 0) + (parseFloat(tax) || 0);
+        (parseFloat(subtotal) || 0) +
+        (parseFloat(tip) || 0) +
+        (parseFloat(tax) || 0);
 
     const addItem = () => {
         if (!name.trim() || !price.trim() || isNaN(Number(price))) return;
@@ -115,7 +123,6 @@ const ItemEditor: React.FC = () => {
                     <Text style={styles.totalText}>${total.toFixed(2)}</Text>
                 </View>
             </View>
-            {/* Optionally, add a button here to save the edits or continue */}
             <TouchableOpacity style={styles.saveButton}>
                 <Text style={styles.saveButtonText}>Save & Continue</Text>
             </TouchableOpacity>
@@ -162,17 +169,6 @@ const styles = StyleSheet.create({
     removeText: {
         color: "red",
     },
-    itemsList: {
-        padding: 16,
-        backgroundColor: "#fff",
-    },
-    itemRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        paddingVertical: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: "#eee",
-    },
     summaryContainer: {
         padding: 16,
         backgroundColor: "#f9f9f9",
@@ -186,17 +182,17 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     fieldLabel: {
-        // fontSize: 18,
+        fontSize: 18,
         fontWeight: "bold",
     },
     fieldInput: {
         width: 80,
         borderWidth: 1,
         borderColor: "#ccc",
-        // padding: 8,
+        padding: 8,
         borderRadius: 4,
         textAlign: "right",
-        // fontSize: 18,
+        fontSize: 18,
     },
     totalRow: {
         borderTopWidth: 2,
@@ -205,7 +201,7 @@ const styles = StyleSheet.create({
         marginTop: 8,
     },
     totalText: {
-        // fontSize: 18,
+        fontSize: 18,
         fontWeight: "bold",
     },
     saveButton: {
