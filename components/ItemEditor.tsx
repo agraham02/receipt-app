@@ -1,6 +1,6 @@
 // ItemsScreen.tsx
 import { useReceipt, ReceiptItem } from "@/context/ReceiptContext";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import {
     View,
     Text,
@@ -16,15 +16,12 @@ const ItemEditor: React.FC = () => {
     const [name, setName] = useState("");
     const [price, setPrice] = useState("");
 
-    // Compute the subtotal from items whenever they change
+    // Compute the subtotal from items whenever they change (as a number)
     const computedSubtotal = useMemo(() => {
         return items.reduce((sum, item) => sum + item.price, 0);
     }, [items]);
 
-    // Editable fields (stored as strings for TextInput)
-    const [subtotal, setSubtotal] = useState<string>(
-        computedSubtotal.toFixed(2)
-    );
+    // Editable fields for tip and tax (stored as strings for TextInput)
     const [tip, setTip] = useState<string>("0");
     const [tax, setTax] = useState<string>("0");
 
@@ -33,25 +30,22 @@ const ItemEditor: React.FC = () => {
         "percentage"
     );
 
-    // Update the subtotal field whenever computedSubtotal changes.
-    useEffect(() => {
-        setSubtotal(computedSubtotal.toFixed(2));
-    }, [computedSubtotal]);
-
-    // Compute the tip based on mode
+    // Compute the tip based on the selected mode using computedSubtotal directly
     const computedTip = useMemo(() => {
-        const sub = parseFloat(subtotal) || 0;
+        const sub = computedSubtotal;
         const tipInput = parseFloat(tip) || 0;
         if (tipMode === "percentage") {
             return sub * (tipInput / 100);
         } else {
             return tipInput;
         }
-    }, [subtotal, tip, tipMode]);
+    }, [computedSubtotal, tip, tipMode]);
 
-    // Compute total dynamically; fallback to 0 if invalid.
+    // Compute tax as a number (fallback to 0 if invalid)
     const computedTax = parseFloat(tax) || 0;
-    const total = (parseFloat(subtotal) || 0) + computedTip + computedTax;
+
+    // Compute total as the sum of computedSubtotal, computedTip, and computedTax
+    const total = computedSubtotal + computedTip + computedTax;
 
     const addItem = () => {
         if (!name.trim() || !price.trim() || isNaN(Number(price))) return;
@@ -103,17 +97,15 @@ const ItemEditor: React.FC = () => {
                 )}
             />
             <View style={styles.summaryContainer}>
+                {/* Display computed subtotal as read-only text */}
                 <View style={styles.fieldRow}>
                     <Text style={styles.fieldLabel}>Subtotal:</Text>
-                    <Text style={styles.fieldLabel}>Total:</Text>
-                    <Text style={styles.totalText}>${total.toFixed(2)}</Text>
-                    <TextInput
-                        style={styles.fieldInput}
-                        value={subtotal}
-                        onChangeText={setSubtotal}
-                        keyboardType="numeric"
-                    />
+                    <Text style={styles.fieldValue}>
+                        ${computedSubtotal.toFixed(2)}
+                    </Text>
                 </View>
+
+                {/* Tip Mode Selection */}
                 <View style={styles.tipModeContainer}>
                     <Text style={styles.fieldLabel}>Tip Mode:</Text>
                     <View style={styles.tipModeButtons}>
@@ -155,6 +147,8 @@ const ItemEditor: React.FC = () => {
                         </TouchableOpacity>
                     </View>
                 </View>
+
+                {/* Editable Tip Input */}
                 <View style={styles.fieldRow}>
                     <Text style={styles.fieldLabel}>Tip:</Text>
                     <TextInput
@@ -165,6 +159,8 @@ const ItemEditor: React.FC = () => {
                         placeholder={tipMode === "percentage" ? "%" : "$"}
                     />
                 </View>
+
+                {/* Editable Tax Input */}
                 <View style={styles.fieldRow}>
                     <Text style={styles.fieldLabel}>Tax:</Text>
                     <TextInput
@@ -175,10 +171,14 @@ const ItemEditor: React.FC = () => {
                         placeholder="0"
                     />
                 </View>
+
+                {/* Display Total */}
                 <View style={[styles.fieldRow, styles.totalRow]}>
                     <Text style={styles.fieldLabel}>Total:</Text>
                     <Text style={styles.totalText}>${total.toFixed(2)}</Text>
                 </View>
+
+                {/* Display Computed Tip */}
                 <View style={styles.fieldRow}>
                     <Text style={styles.fieldLabel}>Computed Tip:</Text>
                     <Text style={styles.totalText}>
@@ -235,6 +235,7 @@ const styles = StyleSheet.create({
         // borderTopWidth: 1,
         // borderTopColor: "#ccc",
         borderRadius: 10,
+        // marginTop: 16,
     },
     fieldRow: {
         flexDirection: "row",
