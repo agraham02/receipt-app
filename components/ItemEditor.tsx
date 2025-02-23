@@ -1,6 +1,6 @@
 // ItemsScreen.tsx
 import { useReceipt, ReceiptItem } from "@/context/ReceiptContext";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     View,
     Text,
@@ -12,40 +12,48 @@ import {
 } from "react-native";
 
 const ItemEditor: React.FC = () => {
-    const { items, setItems } = useReceipt();
+    const {
+        items,
+        setItems,
+        subtotal,
+        setSubtotal,
+        tip,
+        setTip,
+        tax,
+        setTax,
+        tipMode,
+        setTipMode,
+    } = useReceipt();
     const [name, setName] = useState("");
     const [price, setPrice] = useState("");
+    const [tipInput, setTipInput] = useState<string>(tip.toString());
+    const [taxInput, setTaxInput] = useState<string>(tax.toString());
 
     // Compute the subtotal from items whenever they change (as a number)
     const computedSubtotal = useMemo(() => {
         return items.reduce((sum, item) => sum + item.price, 0);
     }, [items]);
 
-    // Editable fields for tip and tax (stored as strings for TextInput)
-    const [tip, setTip] = useState<string>("0");
-    const [tax, setTax] = useState<string>("0");
-
-    // New state for tip mode: "percentage" or "fixed"
-    const [tipMode, setTipMode] = useState<"percentage" | "fixed">(
-        "percentage"
-    );
+    useEffect(() => {
+        setSubtotal(computedSubtotal);
+    }, [computedSubtotal, setSubtotal]);
 
     // Compute the tip based on the selected mode using computedSubtotal directly
     const computedTip = useMemo(() => {
-        const sub = computedSubtotal;
-        const tipInput = parseFloat(tip) || 0;
+        const sub = subtotal;
+        const tipValue = parseFloat(tipInput) || 0;
         if (tipMode === "percentage") {
-            return sub * (tipInput / 100);
+            return sub * (tipValue / 100);
         } else {
-            return tipInput;
+            return tipValue;
         }
-    }, [computedSubtotal, tip, tipMode]);
+    }, [subtotal, tipInput, tipMode]);
 
     // Compute tax as a number (fallback to 0 if invalid)
-    const computedTax = parseFloat(tax) || 0;
+    const computedTax = parseFloat(taxInput) || 0;
 
     // Compute total as the sum of computedSubtotal, computedTip, and computedTax
-    const total = computedSubtotal + computedTip + computedTax;
+    const total = subtotal + computedTip + computedTax;
 
     const addItem = () => {
         if (!name.trim() || !price.trim() || isNaN(Number(price))) return;
@@ -101,7 +109,7 @@ const ItemEditor: React.FC = () => {
                 <View style={styles.fieldRow}>
                     <Text style={styles.fieldLabel}>Subtotal:</Text>
                     <Text style={styles.fieldValue}>
-                        ${computedSubtotal.toFixed(2)}
+                        ${subtotal.toFixed(2)}
                     </Text>
                 </View>
 
@@ -153,8 +161,8 @@ const ItemEditor: React.FC = () => {
                     <Text style={styles.fieldLabel}>Tip:</Text>
                     <TextInput
                         style={styles.fieldInput}
-                        value={tip}
-                        onChangeText={setTip}
+                        value={tipInput}
+                        onChangeText={setTaxInput}
                         keyboardType="numeric"
                         placeholder={tipMode === "percentage" ? "%" : "$"}
                     />
@@ -165,8 +173,8 @@ const ItemEditor: React.FC = () => {
                     <Text style={styles.fieldLabel}>Tax:</Text>
                     <TextInput
                         style={styles.fieldInput}
-                        value={tax}
-                        onChangeText={setTax}
+                        value={taxInput}
+                        onChangeText={setTaxInput}
                         keyboardType="numeric"
                         placeholder="0"
                     />
@@ -256,6 +264,10 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         textAlign: "right",
         // fontSize: 18,
+    },
+    fieldValue: {
+        // fontSize: 18,
+        fontWeight: "bold",
     },
     totalRow: {
         borderTopWidth: 2,

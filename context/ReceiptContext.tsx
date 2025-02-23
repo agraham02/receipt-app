@@ -1,5 +1,5 @@
 // ReceiptContext.tsx
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, useMemo, ReactNode } from "react";
 
 const fakePeople: Person[] = [
     { id: "1", name: "Alice" },
@@ -46,6 +46,8 @@ export interface Assignment {
     [itemId: string]: string[];
 }
 
+export type TipMode = "percentage" | "fixed";
+
 interface ReceiptContextType {
     people: Person[];
     setPeople: React.Dispatch<React.SetStateAction<Person[]>>;
@@ -53,6 +55,14 @@ interface ReceiptContextType {
     setItems: React.Dispatch<React.SetStateAction<ReceiptItem[]>>;
     assignments: Assignment;
     setAssignments: React.Dispatch<React.SetStateAction<Assignment>>;
+    subtotal: number;
+    setSubtotal: React.Dispatch<React.SetStateAction<number>>;
+    tip: number;
+    setTip: React.Dispatch<React.SetStateAction<number>>;
+    tax: number;
+    setTax: React.Dispatch<React.SetStateAction<number>>;
+    tipMode: TipMode;
+    setTipMode: React.Dispatch<React.SetStateAction<TipMode>>;
 }
 
 const ReceiptContext = createContext<ReceiptContextType | undefined>(undefined);
@@ -61,15 +71,29 @@ export const ReceiptProvider = ({ children }: { children: ReactNode }) => {
     const [people, setPeople] = useState<Person[]>(fakePeople);
     const [items, setItems] = useState<ReceiptItem[]>(fakeItems);
     const [assignments, setAssignments] = useState<Assignment>({});
+    const [subtotal, setSubtotal] = useState<number>(
+        fakeItems.reduce((sum, item) => sum + item.price, 0)
+    );
+    const [tip, setTip] = useState<number>(0);
+    const [tax, setTax] = useState<number>(0);
+    const [tipMode, setTipMode] = useState<TipMode>("percentage");
 
-    const value = {
+    const value = useMemo(() => ({
         people,
         setPeople,
         items,
         setItems,
         assignments,
         setAssignments,
-    };
+        subtotal,
+        setSubtotal,
+        tip,
+        setTip,
+        tax,
+        setTax,
+        tipMode,
+        setTipMode,
+    }), [people, items, assignments, subtotal, tip, tax, tipMode]);
 
     return (
         <ReceiptContext.Provider value={value}>
