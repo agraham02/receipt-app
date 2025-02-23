@@ -16,6 +16,21 @@ const ItemEditor: React.FC = () => {
     const [name, setName] = useState("");
     const [price, setPrice] = useState("");
 
+    // Compute default subtotal as the sum of item prices
+    const defaultSubtotal = items.reduce((sum, item) => sum + item.price, 0);
+
+    // Editable fields (stored as strings for TextInput)
+    const [subtotal, setSubtotal] = useState<string>(
+        defaultSubtotal.toFixed(2)
+    );
+    const [tip, setTip] = useState<string>("0");
+    const [tax, setTax] = useState<string>("0");
+
+    // Compute total dynamically; if fields are empty or invalid, fallback to 0.
+    const total =
+        parseFloat(subtotal) ||
+        0 + (parseFloat(tip) || 0) + (parseFloat(tax) || 0);
+
     const addItem = () => {
         if (!name.trim() || !price.trim() || isNaN(Number(price))) return;
         const newItem: ReceiptItem = {
@@ -65,6 +80,45 @@ const ItemEditor: React.FC = () => {
                     </View>
                 )}
             />
+            <View style={styles.summaryContainer}>
+                <View style={styles.fieldRow}>
+                    <Text style={styles.fieldLabel}>Subtotal:</Text>
+                    <TextInput
+                        style={styles.fieldInput}
+                        value={subtotal}
+                        onChangeText={setSubtotal}
+                        keyboardType="numeric"
+                    />
+                </View>
+                <View style={styles.fieldRow}>
+                    <Text style={styles.fieldLabel}>Tip:</Text>
+                    <TextInput
+                        style={styles.fieldInput}
+                        value={tip}
+                        onChangeText={setTip}
+                        keyboardType="numeric"
+                        placeholder="0"
+                    />
+                </View>
+                <View style={styles.fieldRow}>
+                    <Text style={styles.fieldLabel}>Tax:</Text>
+                    <TextInput
+                        style={styles.fieldInput}
+                        value={tax}
+                        onChangeText={setTax}
+                        keyboardType="numeric"
+                        placeholder="0"
+                    />
+                </View>
+                <View style={[styles.fieldRow, styles.totalRow]}>
+                    <Text style={styles.fieldLabel}>Total:</Text>
+                    <Text style={styles.totalText}>${total.toFixed(2)}</Text>
+                </View>
+            </View>
+            {/* Optionally, add a button here to save the edits or continue */}
+            <TouchableOpacity style={styles.saveButton}>
+                <Text style={styles.saveButtonText}>Save & Continue</Text>
+            </TouchableOpacity>
         </View>
     );
 };
@@ -107,5 +161,64 @@ const styles = StyleSheet.create({
     },
     removeText: {
         color: "red",
+    },
+    itemsList: {
+        padding: 16,
+        backgroundColor: "#fff",
+    },
+    itemRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: "#eee",
+    },
+    summaryContainer: {
+        padding: 16,
+        backgroundColor: "#f9f9f9",
+        borderTopWidth: 1,
+        borderTopColor: "#ccc",
+    },
+    fieldRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 12,
+    },
+    fieldLabel: {
+        // fontSize: 18,
+        fontWeight: "bold",
+    },
+    fieldInput: {
+        width: 80,
+        borderWidth: 1,
+        borderColor: "#ccc",
+        // padding: 8,
+        borderRadius: 4,
+        textAlign: "right",
+        // fontSize: 18,
+    },
+    totalRow: {
+        borderTopWidth: 2,
+        borderTopColor: "#ccc",
+        paddingTop: 12,
+        marginTop: 8,
+    },
+    totalText: {
+        // fontSize: 18,
+        fontWeight: "bold",
+    },
+    saveButton: {
+        backgroundColor: "#28a745",
+        marginHorizontal: 16,
+        marginVertical: 16,
+        padding: 16,
+        borderRadius: 8,
+        alignItems: "center",
+    },
+    saveButtonText: {
+        color: "#fff",
+        fontSize: 18,
+        fontWeight: "bold",
     },
 });
