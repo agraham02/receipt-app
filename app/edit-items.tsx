@@ -9,7 +9,7 @@ export default function EditItems() {
         <View style={{ flex: 1 }}>
             <ItemEditor />
             {/* <Link href="/edit-people">Next</Link> */}
-            <Button label="Next" href="/edit-people"/>
+            <Button label="Save & Continue" href="/edit-people"/>
         </View>
     );
 }
